@@ -2,14 +2,21 @@ import streamlit as st
 from utils import load_data
 import pandas as pd
 
-st.set_page_config(page_title="📧 Recruiters", layout="wide")
-st.title("📧 Recruiter Email Logs")
+st.set_page_config(page_title="📧 Recruiter Logs", layout="wide")
+st.title("📧 Recruiter Email Records")
 
 recruiters, _, _ = load_data()
 
 if recruiters:
     df = pd.DataFrame(recruiters)
-    df = df[["first_name", "last_name", "email", "position", "confidence", "mail_sent", "mail_send_success", "followup", "read_status", "sent_at"]]
+
+    # Fill missing fields with None
+    for col in ["first_name", "last_name", "email", "position", "confidence", "mail_sent", "mail_send_success", "followup", "read_status", "sent_at"]:
+        if col not in df.columns:
+            df[col] = None
+
+    df = df[["first_name", "last_name", "email", "position", "confidence",
+             "mail_sent", "mail_send_success", "followup", "read_status", "sent_at"]]
     st.dataframe(df, use_container_width=True)
 else:
     st.warning("No recruiter data found.")
