@@ -11,12 +11,12 @@ if recruiters:
     df = pd.DataFrame(recruiters)
 
     # Fill missing fields with None
-    for col in ["first_name", "last_name", "email", "position", "confidence", "mail_sent", "mail_send_success", "followup", "read_status", "sent_at"]:
+    for col in ["first_name", "last_name", "email", "position", "confidence", "mail_sent", "followup", "read_status", "sent_at"]:
         if col not in df.columns:
             df[col] = None
 
     df = df[["first_name", "last_name", "email", "position", "confidence",
-             "mail_sent", "mail_send_success", "followup", "read_status", "sent_at"]]
+             "mail_sent",  "followup", "read_status", "sent_at"]]
     st.dataframe(df, use_container_width=True)
 else:
     st.warning("No recruiter data found.")
