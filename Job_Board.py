@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def render():
-    st.set_page_config(page_title="💼 Job Listings", layout="wide")
+    # st.set_page_config(page_title="💼 Job Listings", layout="wide")
     st.title("💼 Job Listings")
 
     _, _, jobs = load_data()

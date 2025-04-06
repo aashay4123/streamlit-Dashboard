@@ -2,7 +2,7 @@ import streamlit as st
 from utils import load_data
 import pandas as pd
 
-st.set_page_config(page_title="🏢 Companies", layout="wide")
+# st.set_page_config(page_title="🏢 Companies", layout="wide")
 
 st.title("🏢 Company Profiles")
 
