@@ -74,7 +74,7 @@ def compute_metrics(recruiters):
                     stats["by_company"][company.get(
                         "company_name", "Unknown")] += 1
 
-                job = db.job_listings.find_one({"company.$id": company_id})
+                job = db.job_listings.find_one({"company": company_id})
                 if job:
                     stats["by_job"][job.get("job_title", "Unknown")] += 1
         except Exception as e:
