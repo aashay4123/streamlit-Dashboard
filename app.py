@@ -2,6 +2,13 @@ import streamlit as st
 import pandas as pd
 from utils import load_data, compute_metrics
 
+import Recruiters
+import Companies
+import Job_Board
+
+# ✅ Must be first command
+st.set_page_config(page_title="📊 Full Outreach Dashboard", layout="wide")
+
 # Sidebar navigation
 st.sidebar.title("🔀 Navigation")
 page = st.sidebar.radio(
@@ -31,8 +38,10 @@ if page == "🏠 Home":
     st.bar_chart(job_df)
 
 elif page == "📧 Recruiters":
-    import Recruiters
+    Recruiters.render()
+
 elif page == "🏢 Companies":
-    import Companies
+    Companies.render()
+
 elif page == "💼 Jobs":
-    import Job_Board
+    Job_Board.render()

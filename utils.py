@@ -3,9 +3,6 @@ from pymongo import MongoClient
 from collections import defaultdict
 import os
 
-# MONGO_URI = os.getenv("MONGO_URI")
-# client = MongoClient(MONGO_URI)
-# db = client.job_hunt
 
 MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
