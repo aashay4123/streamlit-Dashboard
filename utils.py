@@ -18,26 +18,65 @@ def load_data():
     return recruiters, companies, jobs
 
 
+# def compute_metrics(recruiters):
+#     stats = {
+#         "total": len(recruiters),
+#         "sent": sum(1 for r in recruiters if r.get("mail_send_success")),
+#         "failed": sum(1 for r in recruiters if not r.get("mail_send_success", True)),
+#         "followup": sum(1 for r in recruiters if r.get("followup")),
+#         "read": sum(1 for r in recruiters if r.get("read_status")),
+#         "by_company": defaultdict(int),
+#         "by_job": defaultdict(int)
+#     }
+
+#     for r in recruiters:
+#         try:
+#             company = db.companies.find_one({"_id": r["company"]["$id"]})
+#             job = db.job_listings.find_one(
+#                 {"company.$id": r["company"]["$id"]})
+#             if company:
+#                 stats["by_company"][company["company_name"]] += 1
+#             if job:
+#                 stats["by_job"][job["job_title"]] += 1
+#         except:
+#             continue
+#     return stats
+
+
 def compute_metrics(recruiters):
     stats = {
         "total": len(recruiters),
-        "sent": sum(1 for r in recruiters if r.get("mail_send_success")),
-        "failed": sum(1 for r in recruiters if not r.get("mail_send_success", True)),
-        "followup": sum(1 for r in recruiters if r.get("followup")),
-        "read": sum(1 for r in recruiters if r.get("read_status")),
+        "sent": 0,
+        "failed": 0,
+        "followup": 0,
+        "read": 0,
         "by_company": defaultdict(int),
         "by_job": defaultdict(int)
     }
 
     for r in recruiters:
+        if r.get("mail_send_success") is True:
+            stats["sent"] += 1
+        elif r.get("mail_send_success") is False:
+            stats["failed"] += 1
+
+        if r.get("followup"):
+            stats["followup"] += 1
+        if r.get("read_status"):
+            stats["read"] += 1
+
         try:
-            company = db.companies.find_one({"_id": r["company"]["$id"]})
-            job = db.job_listings.find_one(
-                {"company.$id": r["company"]["$id"]})
+            company_id = r["company"]["$id"]
+            company = db.companies.find_one({"_id": company_id})
+            job = db.job_listings.find_one({"company.$id": company_id})
+
             if company:
-                stats["by_company"][company["company_name"]] += 1
+                stats["by_company"][company.get(
+                    "company_name", "Unknown")] += 1
             if job:
-                stats["by_job"][job["job_title"]] += 1
-        except:
-            continue
+                stats["by_job"][job.get("job_title", "Unknown")] += 1
+
+        except Exception as e:
+            print("⛔️ Error linking recruiter to company/job:", e)
+
     return stats
