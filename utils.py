@@ -1,3 +1,4 @@
+from bson import ObjectId, DBRef
 from pymongo import MongoClient
 from collections import defaultdict
 import os
@@ -42,7 +43,6 @@ def load_data():
 #             continue
 #     return stats
 
-
 def compute_metrics(recruiters):
     stats = {
         "total": len(recruiters),
@@ -66,17 +66,18 @@ def compute_metrics(recruiters):
             stats["read"] += 1
 
         try:
-            company_id = r["company"]["$id"]
-            company = db.companies.find_one({"_id": company_id})
-            job = db.job_listings.find_one({"company.$id": company_id})
+            company_ref = r.get("company")
+            if isinstance(company_ref, DBRef):
+                company_id = company_ref.id
+                company = db.companies.find_one({"_id": company_id})
+                if company:
+                    stats["by_company"][company.get(
+                        "company_name", "Unknown")] += 1
 
-            if company:
-                stats["by_company"][company.get(
-                    "company_name", "Unknown")] += 1
-            if job:
-                stats["by_job"][job.get("job_title", "Unknown")] += 1
-
+                job = db.job_listings.find_one({"company.$id": company_id})
+                if job:
+                    stats["by_job"][job.get("job_title", "Unknown")] += 1
         except Exception as e:
-            print("⛔️ Error linking recruiter to company/job:", e)
+            print("⚠️ Skipped recruiter (company/job lookup failed):", e)
 
     return stats
