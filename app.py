@@ -70,27 +70,33 @@ if page == "🏠 Home":
     st.divider()
     st.markdown("### 📬 Email Log")
 
-    with st.expander("View Email Details"):
-        st.dataframe(recruiters)
+    with st.expander("📬 View Email Details"):
+        recruiters_df = pd.DataFrame(recruiters)
     
-    def convert_df_to_csv_bytes(df: pd.DataFrame) -> bytes:
-        return df.to_csv(index=False).encode("utf-8")
+        # Drop the '_id' column if it exists
+        if "_id" in recruiters_df.columns:
+            recruiters_df = recruiters_df.drop(columns=["_id"])
     
-    # ✅ Convert recruiters list to DataFrame first
-    recruiters_df = pd.DataFrame(recruiters)
+        # Convert any remaining complex fields to strings (just in case)
+        for col in recruiters_df.columns:
+            recruiters_df[col] = recruiters_df[col].apply(str)
     
-    def convert_df_to_csv_bytes(df: pd.DataFrame) -> bytes:
-        return df.to_csv(index=False).encode("utf-8")
+        # Display the data table
+        st.dataframe(recruiters_df)
     
-    if not recruiters_df.empty:
-        csv = convert_df_to_csv_bytes(recruiters_df)
-        st.download_button(
-            label="⬇️ Download Email Log as CSV",
-            data=csv,
-            file_name="outreach_log.csv",
-            mime="text/csv",
-        )
-
+        # Define CSV export function
+        def convert_df_to_csv_bytes(df: pd.DataFrame) -> bytes:
+            return df.to_csv(index=False).encode("utf-8")
+    
+        # Show download button
+        if not recruiters_df.empty:
+            csv = convert_df_to_csv_bytes(recruiters_df)
+            st.download_button(
+                label="⬇️ Download Email Log as CSV",
+                data=csv,
+                file_name="outreach_log.csv",
+                mime="text/csv",
+            )
 
 # --- RECRUITERS PAGE ---
 elif page == "📧 Recruiters":
