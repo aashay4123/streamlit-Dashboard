@@ -76,14 +76,21 @@ if page == "🏠 Home":
     def convert_df_to_csv_bytes(df: pd.DataFrame) -> bytes:
         return df.to_csv(index=False).encode("utf-8")
     
-    if not recruiters.empty:
-        csv = convert_df_to_csv_bytes(recruiters)
+    # ✅ Convert recruiters list to DataFrame first
+    recruiters_df = pd.DataFrame(recruiters)
+    
+    def convert_df_to_csv_bytes(df: pd.DataFrame) -> bytes:
+        return df.to_csv(index=False).encode("utf-8")
+    
+    if not recruiters_df.empty:
+        csv = convert_df_to_csv_bytes(recruiters_df)
         st.download_button(
             label="⬇️ Download Email Log as CSV",
             data=csv,
             file_name="outreach_log.csv",
             mime="text/csv",
         )
+
 
 # --- RECRUITERS PAGE ---
 elif page == "📧 Recruiters":
