@@ -64,17 +64,17 @@ def compute_metrics(recruiters):
 
         try:
             company_ref = r.get("company")
-            if isinstance(company_ref, DBRef):
-                company_id = company_ref.id
+            if company_ref and "$id" in company_ref:
+                company_id = ObjectId(company_ref["$id"])
                 company = db.companies.find_one({"_id": company_id})
                 if company:
-                    stats["by_company"][company.get(
-                        "company_name", "Unknown")] += 1
+                    stats["by_company"][company.get("company_name", "Unknown")] += 1
 
-                job = db.job_listings.find_one({"company": company_id})
-                if job:
-                    stats["by_job"][job.get("job_title", "Unknown")] += 1
+                    # Also find a job with same company_id
+                    job = db.job_listings.find_one({"company.$id": company_id})
+                    if job:
+                        stats["by_job"][job.get("job_title", "Unknown")] += 1
         except Exception as e:
-            print("⚠️ Skipped recruiter (company/job lookup failed):", e)
+            print(f"⚠️ Skipped recruiter: {e}")
 
     return stats
