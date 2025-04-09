@@ -72,12 +72,12 @@ if page == "🏠 Home":
 
     with st.expander("View Email Details"):
         st.dataframe(recruiters)
-
-        @st.cache_data
-        def convert_df(df):
-            return df.to_csv(index=False).encode("utf-8")
-
-        csv = convert_df(recruiters)
+    
+    def convert_df_to_csv_bytes(df: pd.DataFrame) -> bytes:
+        return df.to_csv(index=False).encode("utf-8")
+    
+    if not recruiters.empty:
+        csv = convert_df_to_csv_bytes(recruiters)
         st.download_button(
             label="⬇️ Download Email Log as CSV",
             data=csv,
