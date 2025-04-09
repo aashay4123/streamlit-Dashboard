@@ -1,114 +1,114 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from utils import load_data, compute_metrics
+from pymongo import MongoClient
+import os
 
-import Recruiters
-import Companies
-import Job_Board
+# --- 🔄 Load Data ---
+@st.cache_data
+def load_data():
+    MONGO_URI = os.getenv("MONGO_URI")
+    client = MongoClient(MONGO_URI)
+    db = client.get_database("job_hunt")
 
-# ✅ Must be first command
-st.set_page_config(page_title="📊 Full Outreach Dashboard", layout="wide")
+    recruiters = list(db.recruiter_emails.find())
+    companies = list(db.companies.find())
+    jobs = list(db.job_listings.find())
 
-# Sidebar navigation
-st.sidebar.title("🔀 Navigation")
-page = st.sidebar.radio("Go to", ["🏠 Home", "📧 Recruiters", "🏢 Companies", "💼 Jobs"])
+    recruiters_df = pd.DataFrame(recruiters)
+    companies_df = pd.DataFrame(companies)
+    jobs_df = pd.DataFrame(jobs)
 
-# Load data
-recruiters, companies, jobs = load_data()
-metrics = compute_metrics(recruiters)
+    return recruiters_df, companies_df, jobs_df
 
-# --- HOME PAGE ---
-if page == "🏠 Home":
-    st.title("📬 Full Outreach Summary")
 
-    st.divider()
-    st.markdown("### 📈 Metrics Overview")
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("📊 Total Emails", metrics.get("total", 0))
-    col2.metric("📤 Sent", metrics.get("sent", 0))
-    col3.metric("❌ Failed", metrics.get("failed", 0))
-    col4.metric("🔁 Follow-Ups", metrics.get("followup", 0))
-    col5.metric("📖 Read", metrics.get("read", 0))
+# --- 🔢 Metrics Computation ---
+def compute_basic_metrics(df):
+    return {
+        "total": len(df),
+        "missing_emails": df["email"].isna().sum(),
+        "read_rate": df["read_status"].mean() if "read_status" in df else 0
+    }
 
-    st.markdown(f"""
-    > You have contacted **{metrics.get('total', 0)}** recruiters so far.  
-    > Of these, **{metrics.get('sent', 0)}** were successful, **{metrics.get('failed', 0)}** failed, and  
-    > **{metrics.get('read', 0)}** have been read.
-    """)
 
-    st.divider()
-    st.markdown("### 🏢 Company Email Volume")
+# --- Streamlit App ---
+st.set_page_config(page_title="📊 Recruiter Outreach Insights", layout="wide")
+st.title("📈 Outreach Data Visualizations")
 
-    # 🏢 Company Chart
-    if metrics.get("by_company"):
-        company_df = pd.DataFrame.from_dict(metrics["by_company"], orient="index", columns=["Email Count"])
-        company_df.index.name = "Company"
-        company_df = company_df.reset_index()
+recruiters_df, companies_df, jobs_df = load_data()
 
-        company_chart = alt.Chart(company_df).mark_bar().encode(
-            x=alt.X('Company:N', sort='-y'),
-            y='Email Count:Q',
-            tooltip=['Company', 'Email Count']
-        ).properties(width=700, height=400)
+st.markdown("### 1. 📬 Emails Sent Per Company")
+if "company" in recruiters_df.columns:
+    recruiters_df["company_name"] = recruiters_df["company"].apply(lambda c: c.get("company_name") if isinstance(c, dict) else "Unknown")
+    email_per_company = recruiters_df.groupby("company_name").size().reset_index(name="Email Count")
+    chart1 = alt.Chart(email_per_company).mark_bar().encode(
+        x=alt.X("company_name:N", sort='-y', title="Company"),
+        y=alt.Y("Email Count:Q"),
+        tooltip=["company_name", "Email Count"]
+    ).properties(width=700, height=400)
+    st.altair_chart(chart1, use_container_width=True)
 
-        st.altair_chart(company_chart, use_container_width=True)
-    else:
-        st.info("No email data available by company.")
+st.markdown("### 2. 🔁 Follow-up Status Breakdown")
+followup_counts = recruiters_df["followup"].value_counts().reset_index()
+followup_counts.columns = ["Followed Up", "Count"]
+chart2 = alt.Chart(followup_counts).mark_arc().encode(
+    theta="Count:Q",
+    color="Followed Up:N",
+    tooltip=["Followed Up", "Count"]
+).properties(width=500, height=400)
+st.altair_chart(chart2)
 
-    st.divider()
-    st.markdown("### 💼 Job Posting Volume")
+st.markdown("### 3. 📖 Read Status Over Time")
+if "created_at" in recruiters_df.columns:
+    recruiters_df["created_at"] = pd.to_datetime(recruiters_df["created_at"])
+    time_read = recruiters_df.groupby(recruiters_df["created_at"].dt.date)["read_status"].sum().reset_index(name="Reads")
+    chart3 = alt.Chart(time_read).mark_line(point=True).encode(
+        x="created_at:T",
+        y="Reads:Q",
+        tooltip=["created_at", "Reads"]
+    ).properties(width=700, height=400)
+    st.altair_chart(chart3)
 
-    # 💼 Job Chart
-    if metrics.get("by_job"):
-        job_df = pd.DataFrame.from_dict(metrics["by_job"], orient="index", columns=["Recruiter Count"])
-        job_df.index.name = "Job"
-        job_df = job_df.reset_index()
+st.markdown("### 4. 🏭 Job Industry Distribution")
+if "industry" in jobs_df.columns:
+    industry_dist = jobs_df["industry"].value_counts().reset_index()
+    industry_dist.columns = ["Industry", "Count"]
+    chart4 = alt.Chart(industry_dist).mark_bar().encode(
+        x=alt.X("Industry:N", sort='-y'),
+        y="Count:Q",
+        tooltip=["Industry", "Count"]
+    ).properties(width=700, height=400)
+    st.altair_chart(chart4)
 
-        job_chart = alt.Chart(job_df).mark_bar().encode(
-            x=alt.X('Job:N', sort='-y'),
-            y='Recruiter Count:Q',
-            tooltip=['Job', 'Recruiter Count']
-        ).properties(width=700, height=400)
+st.markdown("### 5. 💼 Work Model Distribution")
+if "work_model" in jobs_df.columns:
+    work_model = jobs_df["work_model"].value_counts().reset_index()
+    work_model.columns = ["Work Model", "Count"]
+    chart5 = alt.Chart(work_model).mark_arc().encode(
+        theta="Count:Q",
+        color="Work Model:N",
+        tooltip=["Work Model", "Count"]
+    ).properties(width=500, height=400)
+    st.altair_chart(chart5)
 
-        st.altair_chart(job_chart, use_container_width=True)
-    else:
-        st.info("No job posting data available.")
+st.markdown("### 6. 🌍 Companies by Country")
+if "country" in companies_df.columns:
+    company_country = companies_df["country"].value_counts().reset_index()
+    company_country.columns = ["Country", "Count"]
+    chart6 = alt.Chart(company_country).mark_bar().encode(
+        x=alt.X("Country:N", sort='-y'),
+        y="Count:Q",
+        tooltip=["Country", "Count"]
+    ).properties(width=700, height=400)
+    st.altair_chart(chart6)
 
-    st.divider()
-    st.markdown("### 📬 Email Log")
-
-    with st.expander("View Email Details"):
-        recruiters_df = pd.DataFrame(recruiters)
-
-        # Drop _id and convert all other complex fields to string
-        if "_id" in recruiters_df.columns:
-            recruiters_df = recruiters_df.drop(columns=["_id"])
-        for col in recruiters_df.columns:
-            recruiters_df[col] = recruiters_df[col].apply(str)
-
-        st.dataframe(recruiters_df)
-
-        def convert_df_to_csv_bytes(df: pd.DataFrame) -> bytes:
-            return df.to_csv(index=False).encode("utf-8")
-
-        if not recruiters_df.empty:
-            csv = convert_df_to_csv_bytes(recruiters_df)
-            st.download_button(
-                label="⬇️ Download Email Log as CSV",
-                data=csv,
-                file_name="outreach_log.csv",
-                mime="text/csv",
-            )
-
-# --- RECRUITERS PAGE ---
-elif page == "📧 Recruiters":
-    Recruiters.render()
-
-# --- COMPANIES PAGE ---
-elif page == "🏢 Companies":
-    Companies.render()
-
-# --- JOBS PAGE ---
-elif page == "💼 Jobs":
-    Job_Board.render()
+st.markdown("### 7. 📅 Job Postings Over Time")
+if "date_published" in jobs_df.columns:
+    jobs_df["date_published"] = pd.to_datetime(jobs_df["date_published"])
+    job_time = jobs_df.groupby(jobs_df["date_published"].dt.date).size().reset_index(name="Jobs Posted")
+    chart7 = alt.Chart(job_time).mark_area().encode(
+        x="date_published:T",
+        y="Jobs Posted:Q",
+        tooltip=["date_published", "Jobs Posted"]
+    ).properties(width=700, height=400)
+    st.altair_chart(chart7)
