@@ -50,74 +50,109 @@ jobs_df["industry"] = jobs_df.get("industry", pd.Series(dtype="str")).replace(["
 jobs_df["work_model"] = jobs_df.get("work_model", pd.Series(dtype="str")).replace(["", "N/A", None], "Not Specified").fillna("Not Specified")
 jobs_df["date_published"] = pd.to_datetime(jobs_df.get("date_published"), errors="coerce")
 
-# --- Optional: Debug Preview ---
-with st.expander("📦 Raw Data Preview"):
-    st.subheader("Recruiters")
-    st.dataframe(recruiters_df.head())
-    st.subheader("Companies")
-    st.dataframe(companies_df.head())
-    st.subheader("Jobs")
-    st.dataframe(jobs_df.head())
-
-# --- 1. Emails Sent Per Company ---
-st.markdown("### 1. 📬 Emails Sent Per Company")
-company_counts = recruiters_df["company_name"].value_counts().reset_index()
-company_counts.columns = ["Company", "Email Count"]
-chart1 = alt.Chart(company_counts).mark_bar().encode(
-    x=alt.X("Company:N", sort='-y'),
-    y="Email Count:Q",
-    tooltip=["Company", "Email Count"]
-).properties(width=700, height=400)
-st.altair_chart(chart1, use_container_width=True)
-
-# --- 2. Follow-up Status Breakdown ---
-st.markdown("### 2. 🔁 Follow-up Status Breakdown")
-followup_counts = recruiters_df["followup"].fillna(False).astype(bool).value_counts().reset_index()
-followup_counts.columns = ["Followed Up", "Count"]
-chart2 = alt.Chart(followup_counts).mark_arc().encode(
-    theta="Count:Q",
-    color="Followed Up:N",
-    tooltip=["Followed Up", "Count"]
-).properties(width=500, height=400)
-st.altair_chart(chart2)
-
-# --- 3. 🏭 Job Listings per Company Industry ---
-st.markdown("### 3. 🏭 Job Listings per Company Industry")
-
-# Map job.company → company.industry
-industry_map = {
-    str(c["_id"]): c.get("industry", "Unknown") for c in companies_df.to_dict("records")
-}
-jobs_df["company_id"] = jobs_df["company"].apply(lambda oid: str(oid) if oid else None)
-jobs_df["industry"] = jobs_df["company_id"].map(industry_map).fillna("Unknown")
-
-industry_counts = jobs_df["industry"].value_counts().reset_index()
-industry_counts.columns = ["Industry", "Job Listings"]
-
-chart3 = alt.Chart(industry_counts).mark_bar().encode(
-    x=alt.X("Industry:N", sort='-y'),
-    y="Job Listings:Q",
-    tooltip=["Industry", "Job Listings"]
-).properties(width=700, height=400)
-
-st.altair_chart(chart3)
 
 
-# --- 4. 🏢 Job Company Name Distribution ---
-st.markdown("### 4. 🏢 Job Company Name Distribution")
+import streamlit as st
+import pandas as pd
+import altair as alt
+from utils import load_data, compute_metrics
 
-# Map job company ID to name using same mapping from companies_df
-jobs_df["company_id"] = jobs_df["company"].apply(lambda oid: str(oid) if oid else None)
-jobs_df["company_name"] = jobs_df["company_id"].map(company_map).fillna("Unknown")
+import Recruiters
+import Companies
+import Job_Board
 
-company_job_counts = jobs_df["company_name"].value_counts().reset_index()
-company_job_counts.columns = ["Company", "Job Count"]
+# ✅ Must be first command
+st.set_page_config(page_title="📊 Full Outreach Dashboard", layout="wide")
 
-chart4 = alt.Chart(company_job_counts).mark_bar().encode(
-    x=alt.X("Company:N", sort='-y'),
-    y="Job Count:Q",
-    tooltip=["Company", "Job Count"]
-).properties(width=700, height=400)
+# Sidebar navigation
+st.sidebar.title("🔀 Navigation")
+page = st.sidebar.radio("Go to", ["🏠 Home", "📧 Recruiters", "🏢 Companies", "💼 Jobs"])
 
-st.altair_chart(chart4)
+# Load data
+recruiters, companies, jobs = load_data()
+metrics = compute_metrics(recruiters)
 
+# --- HOME PAGE ---
+if page == "🏠 Home":
+      # --- Optional: Debug Preview ---
+    with st.expander("📦 Raw Data Preview"):
+        st.subheader("Recruiters")
+        st.dataframe(recruiters_df.head())
+        st.subheader("Companies")
+        st.dataframe(companies_df.head())
+        st.subheader("Jobs")
+        st.dataframe(jobs_df.head())
+    
+    # --- 1. Emails Sent Per Company ---
+    st.markdown("### 1. 📬 Emails Sent Per Company")
+    company_counts = recruiters_df["company_name"].value_counts().reset_index()
+    company_counts.columns = ["Company", "Email Count"]
+    chart1 = alt.Chart(company_counts).mark_bar().encode(
+        x=alt.X("Company:N", sort='-y'),
+        y="Email Count:Q",
+        tooltip=["Company", "Email Count"]
+    ).properties(width=700, height=400)
+    st.altair_chart(chart1, use_container_width=True)
+    
+    # --- 2. Follow-up Status Breakdown ---
+    st.markdown("### 2. 🔁 Follow-up Status Breakdown")
+    followup_counts = recruiters_df["followup"].fillna(False).astype(bool).value_counts().reset_index()
+    followup_counts.columns = ["Followed Up", "Count"]
+    chart2 = alt.Chart(followup_counts).mark_arc().encode(
+        theta="Count:Q",
+        color="Followed Up:N",
+        tooltip=["Followed Up", "Count"]
+    ).properties(width=500, height=400)
+    st.altair_chart(chart2)
+    
+    # --- 3. 🏭 Job Listings per Company Industry ---
+    st.markdown("### 3. 🏭 Job Listings per Company Industry")
+    
+    # Map job.company → company.industry
+    industry_map = {
+        str(c["_id"]): c.get("industry", "Unknown") for c in companies_df.to_dict("records")
+    }
+    jobs_df["company_id"] = jobs_df["company"].apply(lambda oid: str(oid) if oid else None)
+    jobs_df["industry"] = jobs_df["company_id"].map(industry_map).fillna("Unknown")
+    
+    industry_counts = jobs_df["industry"].value_counts().reset_index()
+    industry_counts.columns = ["Industry", "Job Listings"]
+    
+    chart3 = alt.Chart(industry_counts).mark_bar().encode(
+        x=alt.X("Industry:N", sort='-y'),
+        y="Job Listings:Q",
+        tooltip=["Industry", "Job Listings"]
+    ).properties(width=700, height=400)
+    
+    st.altair_chart(chart3)
+    
+    
+    # --- 4. 🏢 Job Company Name Distribution ---
+    st.markdown("### 4. 🏢 Job Company Name Distribution")
+    
+    # Map job company ID to name using same mapping from companies_df
+    jobs_df["company_id"] = jobs_df["company"].apply(lambda oid: str(oid) if oid else None)
+    jobs_df["company_name"] = jobs_df["company_id"].map(company_map).fillna("Unknown")
+    
+    company_job_counts = jobs_df["company_name"].value_counts().reset_index()
+    company_job_counts.columns = ["Company", "Job Count"]
+    
+    chart4 = alt.Chart(company_job_counts).mark_bar().encode(
+        x=alt.X("Company:N", sort='-y'),
+        y="Job Count:Q",
+        tooltip=["Company", "Job Count"]
+    ).properties(width=700, height=400)
+    
+    st.altair_chart(chart4)
+
+# --- RECRUITERS PAGE ---
+elif page == "📧 Recruiters":
+    Recruiters.render()
+
+# --- COMPANIES PAGE ---
+elif page == "🏢 Companies":
+    Companies.render()
+
+# --- JOBS PAGE ---
+elif page == "💼 Jobs":
+    Job_Board.render()
