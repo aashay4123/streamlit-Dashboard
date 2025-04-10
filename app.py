@@ -136,16 +136,21 @@ if "country" in companies_df.columns and companies_df["country"].notnull().any()
 else:
     st.warning("⚠️ No country data in company table.")
 
-# --- 7. Job Postings Over Time ---
-st.markdown("### 7. 🗓️ Job Postings Over Time")
-valid_jobs = jobs_df.dropna(subset=["date_published"])
-if not valid_jobs.empty:
-    job_time = valid_jobs.groupby(valid_jobs["date_published"].dt.date).size().reset_index(name="Jobs Posted")
-    chart7 = alt.Chart(job_time).mark_area().encode(
-        x="date_published:T",
-        y="Jobs Posted:Q",
-        tooltip=["date_published", "Jobs Posted"]
+# --- 7. 📤 Recruiter Emails Sent Per Day ---
+st.markdown("### 7. 📤 Emails Sent Per Day")
+
+# Convert sent_at to datetime and filter valid entries
+recruiters_df["sent_at"] = pd.to_datetime(recruiters_df.get("sent_at"), errors="coerce")
+valid_sent = recruiters_df.dropna(subset=["sent_at"])
+
+if not valid_sent.empty:
+    sent_counts = valid_sent.groupby(valid_sent["sent_at"].dt.date).size().reset_index(name="Emails Sent")
+    chart7 = alt.Chart(sent_counts).mark_area().encode(
+        x="sent_at:T",
+        y="Emails Sent:Q",
+        tooltip=["sent_at", "Emails Sent"]
     ).properties(width=700, height=400)
     st.altair_chart(chart7)
 else:
-    st.warning("⚠️ No job posting dates found.")
+    st.warning("⚠️ No valid email sent dates found.")
+
