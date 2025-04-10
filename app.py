@@ -28,6 +28,10 @@ def load_data():
 
 
 # --- Streamlit Setup ---
+st.set_page_config(page_title="📊 Full Outreach Dashboard", layout="wide")
+# Sidebar navigation
+st.sidebar.title("🔀 Navigation")
+page = st.sidebar.radio("Go to", ["🏠 Home", "📧 Recruiters", "🏢 Companies", "💼 Jobs"])
 
 # --- Load ---
 recruiters_df, companies_df, jobs_df = load_data()
@@ -52,15 +56,6 @@ recruiters_df["company_name"] = recruiters_df["company_id"].map(company_map).fil
 jobs_df["industry"] = jobs_df.get("industry", pd.Series(dtype="str")).replace(["", "N/A", None], "Unknown").fillna("Unknown")
 jobs_df["work_model"] = jobs_df.get("work_model", pd.Series(dtype="str")).replace(["", "N/A", None], "Not Specified").fillna("Not Specified")
 jobs_df["date_published"] = pd.to_datetime(jobs_df.get("date_published"), errors="coerce")
-
-
-
-
-st.set_page_config(page_title="📊 Full Outreach Dashboard", layout="wide")
-
-# Sidebar navigation
-st.sidebar.title("🔀 Navigation")
-page = st.sidebar.radio("Go to", ["🏠 Home", "📧 Recruiters", "🏢 Companies", "💼 Jobs"])
 
 # Load data
 
