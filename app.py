@@ -85,16 +85,24 @@ if not read_data.empty:
 else:
     st.warning("⚠️ No valid timestamps or read data.")
 
-# --- 4. Job Industry Distribution ---
-st.markdown("### 4. 🏭 Job Industry Distribution")
-industry_counts = jobs_df["industry"].value_counts().reset_index()
-industry_counts.columns = ["Industry", "Count"]
-chart4 = alt.Chart(industry_counts).mark_bar().encode(
-    x=alt.X("Industry:N", sort='-y'),
-    y="Count:Q",
-    tooltip=["Industry", "Count"]
+# --- 4. 🏢 Job Company Name Distribution ---
+st.markdown("### 4. 🏢 Job Company Name Distribution")
+
+# Map job company ID to name using same mapping from companies_df
+jobs_df["company_id"] = jobs_df["company"].apply(lambda oid: str(oid) if oid else None)
+jobs_df["company_name"] = jobs_df["company_id"].map(company_map).fillna("Unknown")
+
+company_job_counts = jobs_df["company_name"].value_counts().reset_index()
+company_job_counts.columns = ["Company", "Job Count"]
+
+chart4 = alt.Chart(company_job_counts).mark_bar().encode(
+    x=alt.X("Company:N", sort='-y'),
+    y="Job Count:Q",
+    tooltip=["Company", "Job Count"]
 ).properties(width=700, height=400)
+
 st.altair_chart(chart4)
+
 
 # --- 5. Work Model Distribution ---
 st.markdown("### 5. 🧑‍💻 Work Model Distribution")
