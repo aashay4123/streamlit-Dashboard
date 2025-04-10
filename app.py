@@ -70,20 +70,27 @@ chart2 = alt.Chart(followup_counts).mark_arc().encode(
 ).properties(width=500, height=400)
 st.altair_chart(chart2)
 
-# --- 3. Read Status Over Time ---
-st.markdown("### 3. 📖 Read Status Over Time")
-recruiters_df["created_at"] = pd.to_datetime(recruiters_df["created_at"], errors="coerce")
-read_data = recruiters_df.dropna(subset=["created_at"])
-read_data = read_data.groupby(read_data["created_at"].dt.date)["read_status"].sum().reset_index(name="Reads")
-if not read_data.empty:
-    chart3 = alt.Chart(read_data).mark_line(point=True).encode(
-        x="created_at:T",
-        y="Reads:Q",
-        tooltip=["created_at", "Reads"]
-    ).properties(width=700, height=400)
-    st.altair_chart(chart3)
-else:
-    st.warning("⚠️ No valid timestamps or read data.")
+# --- 3. 🏭 Job Listings per Company Industry ---
+st.markdown("### 3. 🏭 Job Listings per Company Industry")
+
+# Map job.company → company.industry
+industry_map = {
+    str(c["_id"]): c.get("industry", "Unknown") for c in companies_df.to_dict("records")
+}
+jobs_df["company_id"] = jobs_df["company"].apply(lambda oid: str(oid) if oid else None)
+jobs_df["industry"] = jobs_df["company_id"].map(industry_map).fillna("Unknown")
+
+industry_counts = jobs_df["industry"].value_counts().reset_index()
+industry_counts.columns = ["Industry", "Job Listings"]
+
+chart3 = alt.Chart(industry_counts).mark_bar().encode(
+    x=alt.X("Industry:N", sort='-y'),
+    y="Job Listings:Q",
+    tooltip=["Industry", "Job Listings"]
+).properties(width=700, height=400)
+
+st.altair_chart(chart3)
+
 
 # --- 4. 🏢 Job Company Name Distribution ---
 st.markdown("### 4. 🏢 Job Company Name Distribution")
