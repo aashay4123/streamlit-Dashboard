@@ -4,6 +4,8 @@ import altair as alt
 from pymongo import MongoClient
 from bson import ObjectId
 import os
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # --- Connect & Load Data ---
 @st.cache_data
@@ -15,6 +17,7 @@ def load_data():
     recruiters = list(db.recruiter_emails.find())
     companies = list(db.companies.find())
     jobs = list(db.job_listings.find())
+    
 
     return pd.DataFrame(recruiters), pd.DataFrame(companies), pd.DataFrame(jobs)
 
@@ -25,6 +28,14 @@ st.title("📈 Recruiter Outreach Dashboard")
 
 # --- Load ---
 recruiters_df, companies_df, jobs_df = load_data()
+# --- Sanitize ObjectId fields for display compatibility ---
+def clean_object_ids(df: pd.DataFrame) -> pd.DataFrame:
+    return df.applymap(lambda x: str(x) if isinstance(x, ObjectId) else x)
+
+recruiters_df = clean_object_ids(recruiters_df)
+companies_df = clean_object_ids(companies_df)
+jobs_df = clean_object_ids(jobs_df)
+
 
 # --- Company Mapping ---
 company_map = {
