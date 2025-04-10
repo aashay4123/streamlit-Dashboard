@@ -1,3 +1,8 @@
+
+
+import Recruiters
+import Companies
+import Job_Board
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -52,16 +57,7 @@ jobs_df["date_published"] = pd.to_datetime(jobs_df.get("date_published"), errors
 
 
 
-import streamlit as st
-import pandas as pd
-import altair as alt
-from utils import load_data, compute_metrics
 
-import Recruiters
-import Companies
-import Job_Board
-
-# ✅ Must be first command
 st.set_page_config(page_title="📊 Full Outreach Dashboard", layout="wide")
 
 # Sidebar navigation
@@ -69,8 +65,6 @@ st.sidebar.title("🔀 Navigation")
 page = st.sidebar.radio("Go to", ["🏠 Home", "📧 Recruiters", "🏢 Companies", "💼 Jobs"])
 
 # Load data
-recruiters, companies, jobs = load_data()
-metrics = compute_metrics(recruiters)
 
 # --- HOME PAGE ---
 if page == "🏠 Home":
