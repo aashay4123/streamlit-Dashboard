@@ -28,8 +28,6 @@ def load_data():
 
 
 # --- Streamlit Setup ---
-st.set_page_config(page_title="📊 Outreach Dashboard", layout="wide")
-st.title("📈 Recruiter Outreach Dashboard")
 
 # --- Load ---
 recruiters_df, companies_df, jobs_df = load_data()
